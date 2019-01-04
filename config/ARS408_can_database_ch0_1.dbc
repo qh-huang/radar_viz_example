@@ -54,7 +54,7 @@ BO_ 1549 Obj_3_Extended: 8 ARS_ISF
  SG_ Obj_OrientationAngle : 39|10@0+ (0.4,-180) [-180|229.2] "deg"  ExternalUnit
  SG_ Obj_Width : 63|8@0+ (0.2,0) [0|51] "m"  ExternalUnit
  SG_ Obj_Length : 55|8@0+ (0.2,0) [0|51] "m"  ExternalUnit
- SG_ Obj_ArelLong : 15|11@0+ (0.01,-10) [-10|10.47]  "m//s"  ExternalUnit
+ SG_ Obj_ArelLong : 15|11@0+ (0.01,-10) [-10|10.47]  "m/s"  ExternalUnit
 
 BO_ 1026 CollDetRegionState: 8 ARS_ISF
  SG_ CollDetRegState_WarningLevel : 4|2@0+ (1,0) [0|3] ""  ExternalUnit
@@ -234,8 +234,8 @@ BO_ 1546 Obj_0_Status: 4 ARS_ISF
 
 BO_ 1547 Obj_1_General: 8 ARS_ISF
  SG_ Obj_DynProp : 50|3@0+ (1,0) [0|7] ""  ExternalUnit
- SG_ Obj_RCS : 63|8@0+ (0.5,-64) [-64|63.5] "dBm?  ExternalUnit
- SG_ Obj_VrelLat : 45|9@0+ (0.25,-64) [-64|63.75] "m//s"  ExternalUnit
+ SG_ Obj_RCS : 63|8@0+ (0.5,-64) [-64|63.5] "dB"  ExternalUnit
+ SG_ Obj_VrelLat : 45|9@0+ (0.25,-64) [-64|63.75] "m/s"  ExternalUnit
  SG_ Obj_ID : 7|8@0+ (1,0) [0|255] ""  ExternalUnit
  SG_ Obj_DistLong : 15|13@0+ (0.2,-500) [-500|1138.2] "m"  ExternalUnit
  SG_ Obj_VrelLong : 39|10@0+ (0.25,-128) [-128|127.75] "m/s"  ExternalUnit
@@ -254,7 +254,7 @@ BO_ 1793 Cluster_1_General: 8 ARS_ISF
  SG_ Cluster_RCS : 63|8@0+ (0.5,-64) [-64|63.5] "dB"  ExternalUnit
  SG_ Cluster_DistLong : 15|13@0+ (0.2,-500) [-500|1138.2] "m"  ExternalUnit
  SG_ Cluster_ID : 7|8@0+ (1,0) [0|255] "1"  ExternalUnit
- SG_ Cluster_VrelLong : 39|10@0+ (0.25,-128) [-128|127.75] "m//s"  ExternalUnit
+ SG_ Cluster_VrelLong : 39|10@0+ (0.25,-128) [-128|127.75] "m/s"  ExternalUnit
  SG_ Cluster_DistLat : 17|10@0+ (0.2,-102.3) [-102.3|102.3] "m"  ExternalUnit
 
 BO_ 1794 Cluster_2_Quality: 5 ARS_ISF
