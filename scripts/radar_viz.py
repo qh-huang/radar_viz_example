@@ -2,39 +2,50 @@
 
 import rospy
 import cantools
+import math
 from rospkg import RosPack
 from std_msgs.msg import String
 from can_msgs.msg import Frame
-from sensor_msgs import PointCloud2
-from geometry_msgs import PoseArray
+from geometry_msgs.msg import Point32
+from sensor_msgs.msg import PointCloud
+from sensor_msgs.msg import ChannelFloat32
 from pprint import PrettyPrinter
 
 
-class FrameDecoder(object):
+class CanFrameToRadarTargetConverter(object):
     def __init__(self):
-        print("init FrameDecoder")
         rp = RosPack()
         pkg_path = rp.get_path('radar_viz_example')
         self.can_msg_parser = cantools.database.load_file(pkg_path + '/config/' +
                                                           'ARS408_can_database_ch0_1.dbc')
-        self.pub = rospy.Publisher('can_frame_msgs_human_friendly', String,
-                                   queue_size=10)
-        self.frame_sub = rospy.Subscriber('can0_message', Frame,
+        self.pub = rospy.Publisher('radar_points', PointCloud,
+                                   queue_size=65536)
+        # TODO: prompt to ask topic name
+        self.subscribed_topic_ = "can0_message"
+        print('Subscribed topic: ' + self.subscribed_topic_)
+        self.frame_sub = rospy.Subscriber(self.subscribed_topic_, Frame,
                                           self._cb, queue_size=10)
-        self.msg_id_to_msg_name = {}
-        understood_msgs = []
-        for msg in self.can_msg_parser.messages:
-            this_msg = {}
-            this_msg['frame_id'] = msg.frame_id
-            this_msg['name'] = msg.name
-            this_msg['signals'] = msg.signals
-            #this_msg['nodes'] = msg.nodes
-            understood_msgs.append(this_msg)
-            self.msg_id_to_msg_name[msg.frame_id] = msg.name
 
-        rospy.loginfo("We can interpret the messages:")
-        pp = PrettyPrinter()
-        rospy.loginfo(pp.pformat(understood_msgs))
+        self.pointcloud_msg_ = PointCloud()
+        ch = ChannelFloat32()
+        ch.name = 'intensity'
+        self.pointcloud_msg_.channels.append(ch)
+
+        self.msg_id_to_msg_name_ = {}
+        for msg in self.can_msg_parser.messages:
+            self.msg_id_to_msg_name_[msg.frame_id] = msg.name
+
+        # # debug only
+        # understood_msgs = []
+        # for msg in self.can_msg_parser.messages:
+        #     this_msg = {}
+        #     this_msg['frame_id'] = msg.frame_id
+        #     this_msg['name'] = msg.name
+        #     this_msg['signals'] = msg.signals
+        #     understood_msgs.append(this_msg)
+        # rospy.loginfo("We can interpret the messages:")
+        # pp = PrettyPrinter()
+        # rospy.loginfo(pp.pformat(understood_msgs))
 
     def _cb(self, data):
         # message looks like:
@@ -53,32 +64,53 @@ class FrameDecoder(object):
         try:
             msg = self.can_msg_parser.decode_message(data.id, data.data)
             msg['frame_id'] = data.id
-            msg['message_name'] = self.msg_id_to_msg_name[data.id]
-            msg['raw_msg'] = str(data.data)
-            human_friendly = str(msg)
-            print('Cluster_VrelLat: ' + str(msg['Cluster_VrelLat']))
-            print('Cluster_DistLat: ' + str(msg['Cluster_DistLat']))
-            # string will look like:
-            # {'message_name': 'STEERING_CONTROL', 'CHECKSUM': 5, 'COUNTER': 1,
-            # 'STEER_TORQUE': 0, 'frame_id': 228, 'SET_ME_X00': 0,
-            # 'raw_msg': '\x00\x00\x00\x00\x15\x00\x00\x00',
-            # 'STEER_TORQUE_REQUEST': 0, 'SET_ME_X00_2': 0}
+            msg['message_name'] = self.msg_id_to_msg_name_[data.id]
+            if msg['message_name'] == 'Cluster_0_Status':
+                self.pub.publish(self.pointcloud_msg_)
+
+                # clear message buffer for next scan
+                self.pointcloud_msg_.points = []
+                # refresh header info for next scan
+                self.pointcloud_msg_.header = data.header
+                self.pointcloud_msg_.header.frame_id = "world"
+
+            elif msg['message_name'] == 'Cluster_1_General':
+                msg['raw_msg'] = str(data.data)
+                #human_friendly = str(msg)
+                cluster_dist_long = msg['Cluster_DistLong']
+                cluster_dist_lat = msg['Cluster_DistLat']
+                cluster_rcs = msg['Cluster_RCS']
+
+                # # debug only
+                # print('Cluster_DistLong: ' + str(cluster_dist_long))
+                # print('Cluster_DistLat: ' + str(cluster_dist_lat))
+                # print('Cluster_RCS: ' + str(cluster_rcs))
+
+                pt = Point32()
+                pt.x = cluster_dist_long
+                pt.y = cluster_dist_lat
+                pt.z = 0
+
+                self.pointcloud_msg_.points.append(pt)
+                cluster_rcs_norm = (cluster_rcs - (-64.0)) / \
+                    (64.0 - (-64.0)) * 255
+                self.pointcloud_msg_.channels[0].values.append(
+                    cluster_rcs_norm)
         except KeyError:
             msg = {}
             msg['frame_id'] = data.id
             msg['message_name'] = "UNKNOWN_MESSAGE"
             msg['raw_msg'] = str(data.data)
-            human_friendly = str(msg)
+            print('KeyError: ' + str(msg))
         except ValueError:
             msg = {}
             msg['frame_id'] = data.id
             msg['message_name'] = "UNKNOWN_MESSAGE"
             msg['raw_msg'] = str(data.data)
-            human_friendly = str(msg)
-        self.pub.publish(human_friendly)
+            print('KeyError: ' + str(msg))
 
 
 if __name__ == '__main__':
-    rospy.init_node('frame_decoder')
-    fd = FrameDecoder()
+    rospy.init_node('CanFrameToRadarTargetConverter')
+    fd = CanFrameToRadarTargetConverter()
     rospy.spin()
